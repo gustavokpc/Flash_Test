@@ -1,6 +1,8 @@
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <stdio.h>
+#include <string.h>
 #include <mbed.h>
 #include "BufferedSerial.h"
 
@@ -21,7 +23,7 @@ int main(){
     int size = 0;
     int modoRead = 0;
     int pathLido = 0;
-    char nro = '0';
+    char nro[15];
 
     // setupUSBSerial();
     // debugPrint("Start program\n");
@@ -35,30 +37,31 @@ int main(){
     // st.showDirectory(&st.flash);
     // char file[] = "/fl/log001.bin";
     // st.readFile(&st.flash,file);
-    // Timer t;
 
     if(port.readable()){
         port.read(aux,sizeof(aux));
     }
-    // t.start();
+
+    Timer t;
+    t.start();
+
     while(1){
-        // float tempo = t.read();
-        // debugPrint("%f\n", tempo);
-        debugPrint("ASDASD\n");
-        if(port.readable()){
+        int tempo = duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
+        debugPrint("%d\n", tempo);
+        if(port.readable() && tempo <= 15000){
             if(port.read(aux,sizeof(aux)), aux[0] == 0x52)
                 modoRead = 1;
-            if(modoRead == 1 && port.read(aux,sizeof(aux)), aux[0] >= 0x31 && aux[0] <= 0x39){
+            if(modoRead == 1 && port.read(aux,sizeof(aux)), aux[0] >= 0x30 && aux[0] <= 0x39){
                 pathLido = 1;
-                nro = aux[0];
+                nro[0] = aux[0];
             }
             if(modoRead == 1 && pathLido == 1){
-                char path[] = "/fl/log001.bin";
-                debugPrint("%s", path);
+                char path[15] = "/fl/log00";
+                debugPrint("%s\n", strcat(strcat(path, nro), ".bin"));
             }
         }
     }
     return 0;
 }
-    // st.readFile(&st.flash,file);
 
+    // st.readFile(&st.flash,file);

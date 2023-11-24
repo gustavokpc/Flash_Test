@@ -13,10 +13,10 @@
     {
         "module": "[lib]/c_w.l",
         "size": {
-            ".text": 4344,
+            ".text": 4484,
             ".data": 16,
             ".bss": 348,
-            ".text-delta": 52,
+            ".text-delta": 0,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -57,10 +57,10 @@
     {
         "module": "main.o",
         "size": {
-            ".text": 360,
+            ".text": 428,
             ".data": 0,
             ".bss": 968,
-            ".text-delta": 12,
+            ".text-delta": 24,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -79,7 +79,7 @@
     {
         "module": "mbed-os/connectivity",
         "size": {
-            ".text": 449,
+            ".text": 455,
             ".data": 0,
             ".bss": 0,
             ".text-delta": 0,
@@ -90,7 +90,7 @@
     {
         "module": "mbed-os/drivers",
         "size": {
-            ".text": 3512,
+            ".text": 3814,
             ".data": 0,
             ".bss": 0,
             ".text-delta": 0,
@@ -101,7 +101,7 @@
     {
         "module": "mbed-os/hal",
         "size": {
-            ".text": 2200,
+            ".text": 2210,
             ".data": 8,
             ".bss": 114,
             ".text-delta": 0,
@@ -146,8 +146,8 @@
         "summary": {
             "static_ram": 11272,
             "static_ram_delta": 0,
-            "total_flash": 44383,
-            "total_flash_delta": 64
+            "total_flash": 44909,
+            "total_flash_delta": 24
         }
     }
 ]
