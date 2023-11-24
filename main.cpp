@@ -35,16 +35,16 @@ int main(){
     // st.showDirectory(&st.flash);
     // char file[] = "/fl/log001.bin";
     // st.readFile(&st.flash,file);
-    Timer t;
+    // Timer t;
 
     if(port.readable()){
         port.read(aux,sizeof(aux));
     }
-    t.start();
+    // t.start();
     while(1){
-        float tempo = t.read();
-        debugPrint("%f\n", tempo);
-        debugPrint("");
+        // float tempo = t.read();
+        // debugPrint("%f\n", tempo);
+        debugPrint("ASDASD\n");
         if(port.readable()){
             if(port.read(aux,sizeof(aux)), aux[0] == 0x52)
                 modoRead = 1;
@@ -54,6 +54,7 @@ int main(){
             }
             if(modoRead == 1 && pathLido == 1){
                 char path[] = "/fl/log001.bin";
+                debugPrint("%s", path);
             }
         }
     }
