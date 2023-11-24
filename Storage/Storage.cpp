@@ -62,7 +62,7 @@ void Storage::eraseStorage<SDdevice>(){
 }
 
 void Storage::openFile(StorageDevice* storage){
-    storage->file = fopen(storage->filename,"a");
+    storage->file = fopen(storage->rootDir(),"w+");
 }
 
 void Storage::openNewFile(StorageDevice* storage){
@@ -74,23 +74,19 @@ void Storage::closeFile(StorageDevice *storage){
     fclose(storage->file);
 }
 
-uint16_t Storage::writeFile(Data data, StorageDevice *storage){
+uint16_t Storage::writeFile(Data data, FILE* file){
     uint16_t writeSize = 0;
     Timer t;
     t.start();
-    // if(storage->file != nullptr){
-    //     debugPrint("A file was already open, check was you're doing...\n");
-    //     fclose(storage->file);
-    // }
-    if(storage->file == nullptr)
-        storage->file = fopen(storage->filename,"a");
-    writeSize = fwrite((char*)&data, sizeof(char), sizeof(Data), storage->file);
-    debugPrint("Wrote %lld\n", data.timeStamp);
-    // fclose(storage->file);
-    
+    if(file == nullptr){
+        debugPrint("Could not write on file. Perhaps the file is not open\n");
+    }
+    else{
+        writeSize = fwrite((char*)&data, sizeof(char), sizeof(Data), file);
+    }
     t.stop();
     int time = std::chrono::duration_cast<std::chrono::microseconds>(t.elapsed_time()).count();
-    debugPrint("Write took %d us\n",time);
+    // debugPrint("Write took %d us\n",time);
     t.reset();
     return writeSize;
 }
@@ -151,11 +147,10 @@ void Storage::createFile(StorageDevice* storage){
         // TODO: Treat error, stop and beep error
     }
     storage->filename = (char*)malloc(FILENAME_SIZE*sizeof(char));
-    strcpy(storage->filename,storage->rootDir());
+    strcpy(storage->filename,FLASH_ROOT_DIR);
     strcat(storage->filename,nextFName);
     debugPrint("filename: %s\n", storage->filename);
-    // storage->file = fopen(storage->filename, "wx");
-    // closeFile(storage);
+    storage->file = fopen(storage->filename, "wx");
 }
 
 char* Storage::getCurrentPath(StorageDevice storage){

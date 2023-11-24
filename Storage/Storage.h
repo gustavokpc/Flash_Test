@@ -61,7 +61,7 @@ class Storage{
         void readFile(StorageDevice* storage, char* filepath);
         void closeFile(StorageDevice* storage);
         void createFile(StorageDevice* storage);
-        uint16_t writeFile(Data data, StorageDevice *storage);
+        uint16_t writeFile(Data data, FILE* file);
         template <class DeviceType> void getUsedSize();
         void deinitStorage();
 };

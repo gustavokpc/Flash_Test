@@ -5,7 +5,7 @@
             ".text": 22,
             ".data": 0,
             ".bss": 0,
-            ".text-delta": 0,
+            ".text-delta": -692,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -16,7 +16,7 @@
             ".text": 4484,
             ".data": 16,
             ".bss": 348,
-            ".text-delta": 0,
+            ".text-delta": -824,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -28,6 +28,17 @@
             ".data": 0,
             ".bss": 0,
             ".text-delta": 0,
+            ".data-delta": 0,
+            ".bss-delta": 0
+        }
+    },
+    {
+        "module": "[lib]/libcpp_w.l",
+        "size": {
+            ".text": 0,
+            ".data": 0,
+            ".bss": 0,
+            ".text-delta": -1,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -57,10 +68,10 @@
     {
         "module": "main.o",
         "size": {
-            ".text": 428,
+            ".text": 545,
             ".data": 0,
             ".bss": 968,
-            ".text-delta": 24,
+            ".text-delta": -144,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -82,7 +93,7 @@
             ".text": 455,
             ".data": 0,
             ".bss": 0,
-            ".text-delta": 0,
+            ".text-delta": -94,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -90,12 +101,12 @@
     {
         "module": "mbed-os/drivers",
         "size": {
-            ".text": 3814,
+            ".text": 3898,
             ".data": 0,
             ".bss": 0,
-            ".text-delta": 0,
+            ".text-delta": -1254,
             ".data-delta": 0,
-            ".bss-delta": 0
+            ".bss-delta": -1544
         }
     },
     {
@@ -115,7 +126,7 @@
             ".text": 9151,
             ".data": 64,
             ".bss": 420,
-            ".text-delta": 0,
+            ".text-delta": -784,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -132,12 +143,23 @@
         }
     },
     {
+        "module": "mbed-os/storage",
+        "size": {
+            ".text": 0,
+            ".data": 0,
+            ".bss": 0,
+            ".text-delta": -32119,
+            ".data-delta": 0,
+            ".bss-delta": -40
+        }
+    },
+    {
         "module": "mbed-os/targets",
         "size": {
-            ".text": 13116,
+            ".text": 13320,
             ".data": 8,
             ".bss": 1141,
-            ".text-delta": 0,
+            ".text-delta": -3241,
             ".data-delta": 0,
             ".bss-delta": 0
         }
@@ -145,9 +167,9 @@
     {
         "summary": {
             "static_ram": 11272,
-            "static_ram_delta": 0,
-            "total_flash": 44909,
-            "total_flash_delta": 24
+            "static_ram_delta": -1584,
+            "total_flash": 45314,
+            "total_flash_delta": -39153
         }
     }
 ]
