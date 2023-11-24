@@ -1,64 +1,118 @@
 #include "Storage.h"
+#include "FATFileSystem.h"
+#include <chrono>
 #include <cstdio>
 
-int Storage::initFlashStorage(){
+template<>
+int Storage::initStorage<FlashDevice>(){
     int err = 0;
     debugPrint("Starting Flash Block Device...\n");
-    flashBlockDevice = new SPIFBlockDevice(FLASH_MOSI,FLASH_MISO,FLASH_SCLK,FLASH_CS);
+    flash.blockDevice = new SPIFBlockDevice(FLASH_MOSI,FLASH_MISO,FLASH_SCLK,FLASH_CS);
     debugPrint("Starting Flash LFS...\n");
-    flashFS = new LittleFileSystem2(FLASH_ROOT);
+    flash.fs = new LittleFileSystem2(FLASH_ROOT);
     debugPrint("Mounting LFS with Flash Block device...");
-    err = flashFS->mount(flashBlockDevice); //Not mounting
+    err = flash.fs->mount(flash.blockDevice); //Not mounting
     err?debugPrint("Failed\n"):debugPrint("Ok\n");
     #ifndef FORCE_REFORMAT_FLASH
     if(err){
         debugPrint("Flash did not mount, reformatting...");
-        err = LittleFileSystem2::format(flashBlockDevice);
+        err = LittleFileSystem2::format(flash.blockDevice);
         err?debugPrint("Failed!\n"):debugPrint("Ok!\n");
     }
     #else
     debugPrint("Force reformat on, reformatting...");
-    err = LittleFileSystem2::format(flashBlockDevice);
+    err = LittleFileSystem2::format(flash.blockDevice);
     err?debugPrint("Failed!\n"):debugPrint("Ok!\n");
     #endif
     return err;
 }
 
-void Storage::createFlashFile(){
-    char* nextFName = nextFile(true);
-    if(strcmp(nextFName,"nope") == 0){
-        // TODO: Treat error, stop and beep error
-    }
-    filenameFlash = (char*)malloc(FILENAME_SIZE*sizeof(char));
-    strcpy(filenameFlash,FLASH_ROOT_DIR);
-    strcat(filenameFlash,nextFName);
-    fFlash = fopen(filenameFlash, "w+");
+// template<>
+// int Storage::initStorage<SDdevice>(){
+//     int err = 0;
+//     debugPrint("Starting SD Block Device...\n");
+//     sd.blockDevice = new SDBlockDevice(SD_MOSI,SD_MISO,SD_SCLK,SD_CS,1000000,0);
+//     debugPrint("Starting SD FAT FS...\n");
+//     sd.fs = new FATFileSystem(SD_ROOT);
+//     debugPrint("Mounting FAT FS with SD Block device...");
+//     err = sd.fs->mount(sd.blockDevice); //Not mounting
+//     err?debugPrint("Failed\n"):debugPrint("Ok\n");
+//     #ifndef FORCE_REFORMAT_SD
+//     if(err){
+//         debugPrint("SD did not mount, reformatting...");
+//         err = FATFileSystem::format(sd.blockDevice);
+//         err?debugPrint("Failed!\n"):debugPrint("Ok!\n");
+//     }
+//     #else
+//     debugPrint("Force reformat on, reformatting...");
+//     err = FATFileSystem::format(sd.blockDevice);
+//     err?debugPrint("Failed!\n"):debugPrint("Ok!\n");
+//     #endif
+//     return err;
+// }
+
+template<>
+void Storage::eraseStorage<FlashDevice>(){
+    flash.blockDevice->erase(0,flash.blockDevice->size());    // Full erase
 }
 
-uint16_t Storage::writeFlashFile(Data data){
+template<>
+void Storage::eraseStorage<SDdevice>(){
+    sd.blockDevice->erase(0,sd.blockDevice->size());    // Full erase
+}
+
+void Storage::openFile(StorageDevice* storage){
+    storage->file = fopen(storage->filename,"a");
+}
+
+void Storage::openNewFile(StorageDevice* storage){
+    storage->file = fopen(storage->filename,"w+");
+}
+
+
+void Storage::closeFile(StorageDevice *storage){
+    fclose(storage->file);
+}
+
+uint16_t Storage::writeFile(Data data, StorageDevice *storage){
     uint16_t writeSize = 0;
-    if(fFlash == nullptr){
-        debugPrint("Could not write on file at Flash. Perhaps the file is not open\n");
-    }
-    else{
-        writeSize = fwrite((char*)&data, sizeof(char), sizeof(Data), fFlash);
-    }
+    Timer t;
+    t.start();
+    // if(storage->file != nullptr){
+    //     debugPrint("A file was already open, check was you're doing...\n");
+    //     fclose(storage->file);
+    // }
+    if(storage->file == nullptr)
+        storage->file = fopen(storage->filename,"a");
+    writeSize = fwrite((char*)&data, sizeof(char), sizeof(Data), storage->file);
+    debugPrint("Wrote %lld\n", data.timeStamp);
+    // fclose(storage->file);
+    
+    t.stop();
+    int time = std::chrono::duration_cast<std::chrono::microseconds>(t.elapsed_time()).count();
+    debugPrint("Write took %d us\n",time);
+    t.reset();
     return writeSize;
 }
 
-char* Storage::nextFile(bool isFlash){
+void Storage::showDirectory(StorageDevice* storage){
+    dir = opendir(storage->rootDir());
+    debugPrint("Reading directory %s...\n",storage->rootDir());
+    while(1){
+    struct dirent *entity = readdir(dir);
+        if(!entity)
+            break;
+        debugPrint("%s\n",entity->d_name);
+    }
+}
+
+char* Storage::nextFile(StorageDevice* storage){
     char* next_filename;
     char number[4];
     uint16_t current_filename_index = 0;
     next_filename = (char*)malloc(FILENAME_MAX*sizeof(char));
-    if(isFlash){
-        dir = opendir(FLASH_ROOT_DIR);
-        debugPrint("Reading directory %s...\n",FLASH_ROOT_DIR);
-    }
-    else{
-        dir = opendir(SD_ROOT_DIR);
-        debugPrint("Reading directory %s...\n",SD_ROOT_DIR);
-    }
+    dir = opendir(storage->rootDir());
+    debugPrint("Reading directory %s...\n",storage->rootDir());
     
     while(1){  
         // Defaults to log000.bin, where each 0 can be a number from 0 to 9, starting at 001
@@ -82,7 +136,8 @@ char* Storage::nextFile(bool isFlash){
         }
     }
 
-    openFlashFile();
+    // openFile(storage);  //Why am I opening this again?
+
     if(current_filename_index < 1000)
         sprintf(next_filename,"log%03d.bin",++current_filename_index);
     else
@@ -90,57 +145,108 @@ char* Storage::nextFile(bool isFlash){
     return next_filename;
 }
 
-void Storage::openFlashFile(){
-    fFlash = fopen(FLASH_ROOT_DIR, "w+");
-}
-
-void Storage::closeFlashFile(){
-    fclose(fFlash);
-}
-
-void Storage::readFlashFile(char* path){
-    debugPrint("Displaying \"%s\"...", path);
-    fflush(stdout); // Cleans the standard output buffer
-    if(fFlash != nullptr){
-        debugPrint("There's a file already open, trying to open \"%s\"...", path);
-        closeFlashFile();
+void Storage::createFile(StorageDevice* storage){
+    char* nextFName = nextFile(storage);
+    if(strcmp(nextFName,"nope") == 0){
+        // TODO: Treat error, stop and beep error
     }
-    fFlash = fopen(path,"r");
-    if(!fFlash)
+    storage->filename = (char*)malloc(FILENAME_SIZE*sizeof(char));
+    strcpy(storage->filename,storage->rootDir());
+    strcat(storage->filename,nextFName);
+    debugPrint("filename: %s\n", storage->filename);
+    // storage->file = fopen(storage->filename, "wx");
+    // closeFile(storage);
+}
+
+char* Storage::getCurrentPath(StorageDevice storage){
+    char* path;
+    strcpy(path,storage.rootDir());
+    strcat(path,storage.filename);
+    return path;
+}
+
+void Storage::readFile(StorageDevice* storage){
+    char* path = getCurrentPath(*storage); // TODO: Assign path
+    debugPrint("Displaying \"%s\"...\n", path); // Like "/fs/log002.txt" 
+    fflush(stdout); // Cleans the standard output buffer
+    if(storage->file != nullptr){
+        debugPrint("There's a file already open, trying to open \"%s\"...\n", path);
+        // closeFile(storage);
+        fclose(storage->file);
+    }
+    storage->file = fopen(path,"r");
+    if(!storage->file)
+        debugPrint("Could not read Flash file. Perhaps the file is not created\n");
+    else{
+        filePrint("Timestamp\n");
+        Data tmpData;
+        while(!feof(storage->file)){   // While EOF(End Of File) is not found
+            fread((char* )&tmpData, sizeof(char), sizeof(Data),storage->file);
+            filePrint("%lld\n",
+               tmpData.timeStamp
+            //    tmpData.pressure,
+            //    tmpData.temperatureLPS22HB,
+            //    tmpData.humidity,
+            //    tmpData.gpsFix,
+            //    tmpData.latitude,
+            //    tmpData.longitude,
+            //    tmpData.elevation,
+            //    tmpData.UTCTime,
+            //    tmpData.timeStamp,
+            //    tmpData.a[0],
+            //    tmpData.a[1],
+            //    tmpData.a[2]
+            );
+        }
+        fflush(stdout);
+        closeFile(storage);
+    }
+}
+
+void Storage::readFile(StorageDevice* storage, char* filepath){
+    debugPrint("Displaying \"%s\"...\n", filepath); // Like "/fs/log002.txt" 
+    fflush(stdout); // Cleans the standard output buffer
+    // if(storage->file != nullptr){
+    //     debugPrint("There's a file already open, trying to open \"%s\"...\n", filepath);
+    //     // closeFile(storage);
+    //     fclose(storage->file); //pobrema
+    // }
+    debugPrint("Opening\"%s\"...\n", filepath);
+    storage->file = fopen(filepath,"r");
+    if(!storage->file)
         debugPrint("Could not read Flash file. Perhaps the file is not created\n");
     else{
         filePrint("Preamble, Pressure, Temperature, Humdity, gpsFix, Latitude, Longitude, Time, TimeStamp, Acc(x), Acc(y), Acc(z)\n");
         Data tmpData;
-        while(!feof(fFlash)){   // While EOF(End Of File) is not found
-            fread((char* )&tmpData, sizeof(char), sizeof(Data),fFlash);
-            filePrint("%s,%f,%f,%f,%d,%f,%f,%f,%d,%lld,%d,%d,%d\n",
-               tmpData.preamble,
-               tmpData.pressure,
-               tmpData.temperatureLPS22HB,
-               tmpData.humidity,
-               tmpData.gpsFix,
-               tmpData.latitude,
-               tmpData.longitude,
-               tmpData.elevation,
-               tmpData.UTCTime,
-               tmpData.timeStamp,
-               tmpData.a[0],
-               tmpData.a[1],
-               tmpData.a[2]);
+        while(!feof(storage->file)){   // While EOF(End Of File) is not found
+            fread((char* )&tmpData, sizeof(char), sizeof(Data),storage->file);
+            //filePrint("%s,%f,%f,%f,%d,%f,%f,%f,%d,%lld,%d,%d,%d\n",
+            
+            filePrint("%d\n",
+            //    tmpData.preamble,
+            //    tmpData.pressure,
+            //    tmpData.temperature,
+            //    tmpData.gpsFix,
+            //    tmpData.latitude,
+            //    tmpData.longitude,
+            //    tmpData.elevation,
+            tmpData.UTCTime
+            //    tmpData.timeStamp,
+            //    tmpData.a[0],
+            //    tmpData.a[1],
+            //    tmpData.a[2]
+            );
         }
         fflush(stdout);
-        closeFlashFile();
+        closeFile(storage);
     }
 }
-
-void Storage::deinitFlashStorage(){
-    closeFlashFile();
-    flashFS->unmount();
-    // Frees filename string space in memory
-    free(filenameFlash);
+template<>
+void Storage::getUsedSize<FlashDevice>(){
+    struct statvfs fsStat;
+    flash.fs->statvfs(FLASH_ROOT_DIR, &fsStat);
+    debugPrint("Filesystem block size: %ld\n",fsStat.f_bsize);
+    debugPrint("Number of blocks: %lld\n",fsStat.f_blocks);
+    debugPrint("Free size(blocks): %lld\n",fsStat.f_bfree);
+    debugPrint("Available blocks: %lld\n",fsStat.f_bavail);
 }
-
-void Storage::eraseFlash(){
-    flashBlockDevice->erase(0,flashBlockDevice->size());    // Full erase
-}
-

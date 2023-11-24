@@ -290,7 +290,14 @@ BUILD/NUCLEO_G474RE/ARMC6/main.o: main.cpp \
   mbed-os/platform/include/platform/mbed_stats.h \
   mbed-os/platform/include/platform/Stream.h \
   mbed-os/platform/include/platform/FileLike.h Data.h Storage/Storage.h \
+  mbed-os/storage/filesystem/fat/include/fat/FATFileSystem.h \
+  mbed-os/storage/filesystem/fat/ChaN/ff.h \
+  mbed-os/storage/filesystem/fat/ChaN/ffconf.h \
+  mbed-os/storage/blockdevice/COMPONENT_SD/include/SD/SDBlockDevice.h \
+  mbed-os/hal/include/hal/static_pinmap.h \
+  mbed-os/hal/include/hal/qspi_api.h mbed-os/hal/include/hal/ospi_api.h \
   mbed-os/storage/blockdevice/COMPONENT_SPIF/include/SPIF/SPIFBlockDevice.h \
   mbed-os/storage/blockdevice/include/blockdevice/internal/SFDP.h \
   mbed-os/storage/filesystem/littlefsv2/include/littlefsv2/LittleFileSystem2.h \
-  mbed-os/storage/filesystem/littlefsv2/littlefs/lfs2.h globalDefines.h
+  mbed-os/storage/filesystem/littlefsv2/littlefs/lfs2.h \
+  Storage/../Data.h Storage/../globalDefines.h
